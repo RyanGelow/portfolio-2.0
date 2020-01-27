@@ -6,11 +6,12 @@ const creds = require('./config');
 
 var transport = {
     host: 'smtp.gmail.com', // Don’t forget to replace with the SMTP host of your provider
-    port: 587,
+    port: 25,
+    secure: false,
     auth: {
-    user: creds.USER,
-    pass: creds.PASS
-  }
+      user: creds.USER,
+      pass: creds.PASS
+    }
 }
 
 var transporter = nodemailer.createTransport(transport)
@@ -31,7 +32,7 @@ router.post('/send', (req, res, next) => {
 
   var mail = {
     from: name,
-    to: 'RECEIVING_EMAIL_ADDRESS_GOES_HERE',  // Change to email address that you want to receive messages on
+    to: "exisphere@gmail.com",  // Change to email address that you want to receive messages on
     subject: 'New Message from Contact Form',
     text: content
   }
