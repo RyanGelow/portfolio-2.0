@@ -1,57 +1,60 @@
-var express = require('express');
-var router = express.Router();
-var nodemailer = require('nodemailer');
-var cors = require('cors');
-const creds = require('./config');
+const express = require('express');
+const bodyParser = require('body-parser');
+const nodemailer = require('nodemailer');
+const mg = require('nodemailer-mailgun-transport');
+const AUTH = require('./config');
 
-var transport = {
-    host: 'smtp.gmail.com', // Don’t forget to replace with the SMTP host of your provider
-    port: 25,
-    secure: false,
+// const cookieParser = require('cookie-parser');
+// const cors = require('cors');
+const app = express();
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+// app.use(cookieParser());
+
+
+app.post('/api/form', (req, res) => {
+  
+  const auth = {
     auth: {
-      user: creds.USER,
-      pass: creds.PASS
+      api_key: AUTH.APIKEY,
+      domain: AUTH.DOMAIN
     }
-}
-
-var transporter = nodemailer.createTransport(transport)
-
-transporter.verify((error, success) => {
-  if (error) {
-    console.log(error);
-  } else {
-    console.log('Server is ready to take messages');
-  }
-});
-
-router.post('/send', (req, res, next) => {
-  var name = req.body.name
-  var email = req.body.email
-  var message = req.body.message
-  var content = `name: ${name} \n email: ${email} \n message: ${message} `
-
-  var mail = {
-    from: name,
-    to: "exisphere@gmail.com",  // Change to email address that you want to receive messages on
-    subject: 'New Message from Contact Form',
-    text: content
   }
 
-  transporter.sendMail(mail, (err, data) => {
+  const nodemailerMailgun = nodemailer.createTransport(mg(auth))
+
+  const htmlEmail = `
+    <h3>Ryan Gelow Portfolio Outreach Email</h3>
+    <ul>
+      <li>Name: ${req.body.name}</li>
+      <li>Email: ${req.body.email}</li>
+    </ul>
+    <h3>Message</h3>
+    <p>${req.body.message}</p>
+  `
+
+  nodemailerMailgun.sendMail({
+    from: 'outreach@ryangelow.com',
+    to: AUTH.USER, // An array if you have multiple recipients.
+    // cc:'second@domain.com',
+    // bcc:'secretagent@company.gov',
+    subject: 'Ryan Gelow Portfolio Outreach',
+    html: htmlEmail,
+    text: req.body.message,
+  }, (err, info) => {
     if (err) {
-      res.json({
-        status: 'fail'
-      })
-    } else {
-      res.json({
-       status: 'success'
-      })
+      console.log(`Error: ${err}`);
     }
-  })
+    else {
+      console.log(`Response: ${JSON.stringify(info)}`);
+    }
+  });
+  
 })
 
-const app = express()
-app.use(cors())
-app.use(express.json())
-app.use('/', router)
-app.listen(3002)
+const PORT = process.env.PORT || 3001;
+
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`)
+})
